@@ -8,6 +8,7 @@ import magic
 from pyramid.httpexceptions import HTTPBadRequest, HTTPSeeOther
 from pyramid.view import view_config, view_defaults
 import wtforms.form, wtforms.fields, wtforms.validators
+from wtforms.ext.sqlalchemy.fields import QuerySelectField
 
 from floof import model
 from floof.forms import MultiCheckboxField, MultiTagField, QueryMultiCheckboxField
@@ -48,6 +49,8 @@ def get_number_of_colors(image):
     if mode == '1':
         return 2
     elif mode == 'L':
+        # this should probably be modified to accept more than a simple submission.
+
         return 256
     elif mode == 'P':
         # This is sort of (a) questionable and (b) undocumented, BUT:
@@ -85,6 +88,8 @@ class UploadPage(FormWorkflow):
 
         albums = None  # I am populated dynamically based on user
 
+        # categories = None # populated based on definitions in the database
+
         remark = wtforms.fields.TextAreaField(u'Remark')
 
     def make_form(self):
@@ -94,6 +99,12 @@ class UploadPage(FormWorkflow):
                 query_factory=lambda: model.session.query(model.Album).with_parent(self.request.user),
                 get_label=lambda album: album.name,
             )
+
+            # categories = QuerySelectField(u'Categories',
+            #     query_factory=lambda: model.session.query(model.Category),
+            #     get_label=lambda category: category.name,
+            # )
+
         return DerivedForm(self.request.POST)
 
 
@@ -188,6 +199,8 @@ class UploadPage(FormWorkflow):
 
         # Dump the thumbnail in a buffer and save it, too
         buf = StringIO()
+        
+        # TODO thumbnail upload needs to be added
         if mimetype == u'image/png':
             thumbnail_format = 'PNG'
         elif mimetype == u'image/gif':
@@ -204,6 +217,7 @@ class UploadPage(FormWorkflow):
         remark = form.remark.data.strip()
 
         # Stuff it all in the db
+        # TODO is this where to add code for the category?
         resource = model.Resource(type=u'artwork')
         discussion = model.Discussion(resource=resource)
         general_data = dict(
